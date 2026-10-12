@@ -4,6 +4,9 @@
  * game draws the built-in cartoon placeholder instead.
  */
 
+import muraliChase from "@/assets/murali-chase.png.asset.json";
+import muraliAngry from "@/assets/murali-angry.png.asset.json";
+
 export interface BossConfig {
   id: "murali" | "sumeet";
   name: string;
@@ -66,7 +69,7 @@ export const BOSSES: BossConfig[] = [
   {
     id: "murali",
     name: "MURALI",
-    images: { front: null, chase: null, angry: null },
+    images: { front: muraliChase.url, chase: muraliChase.url, angry: muraliAngry.url },
     scale: 1.0,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
