@@ -23,7 +23,7 @@ import {
   STAGE1_LENGTH,
   STAGE2_LENGTH,
 } from "@/config/game";
-import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU } from "@/config/rig";
+import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU, FRAME_SCALE } from "@/config/rig";
 import { TUNING as T } from "@/config/tuning";
 import { audio } from "./audio";
 import { circle, drawBossPlaceholder, drawNameTag, roundRect } from "./bossArt";
