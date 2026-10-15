@@ -1961,7 +1961,7 @@ export class Engine {
     const img = this.frameFor();
     const pose = this.renderPose();
     if (img) {
-      const h = T.playerHeight * ground.s;
+      const h = T.playerHeight * ground.s * FRAME_SCALE;
       const w = (h * img.width) / img.height;
       ctx.translate(feet.x, feet.y);
       ctx.rotate(pose.rot);

@@ -1,6 +1,6 @@
-import backAsset from "@/assets/fathu-back.png.asset.json";
-import sideAsset from "@/assets/fathu-side.png.asset.json";
-import frontAsset from "@/assets/fathu-front.png.asset.json";
+import backAsset from "@/assets/fathu2-back.png.asset.json";
+import sideAsset from "@/assets/fathu2-side.png.asset.json";
+import frontAsset from "@/assets/fathu2-front.png.asset.json";
 
 export interface Sprite {
   img: HTMLImageElement | null;
