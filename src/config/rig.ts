@@ -70,9 +70,16 @@ export const RIG_BLEND_TAU = 0.026;
  * Optional frame-by-frame sprites (back view, transparent, feet at the bottom).
  * If these files exist in /public/sprites they replace the rig for those states.
  */
+const runMods = import.meta.glob("../assets/fathu_run_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
+const jumpMods = import.meta.glob("../assets/fathu_jump_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
+const urls = (m: Record<string, { url: string }>) => Object.keys(m).sort().map((k) => m[k].url);
+
+/** Frames are drawn this much taller than playerHeight (frames include headroom for raised arms). */
+export const FRAME_SCALE = 1.15;
+
 export const OPTIONAL_FRAMES = {
-  run: Array.from({ length: 8 }, (_, i) => `/sprites/fathu_run_0${i + 1}.png`),
-  jump: Array.from({ length: 6 }, (_, i) => `/sprites/fathu_jump_0${i + 1}.png`),
+  run: urls(runMods),
+  jump: urls(jumpMods),
   slide: Array.from({ length: 5 }, (_, i) => `/sprites/fathu_slide_0${i + 1}.png`),
   roll: Array.from({ length: 5 }, (_, i) => `/sprites/fathu_roll_0${i + 1}.png`),
 };

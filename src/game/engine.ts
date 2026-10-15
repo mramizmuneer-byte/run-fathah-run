@@ -23,7 +23,7 @@ import {
   STAGE1_LENGTH,
   STAGE2_LENGTH,
 } from "@/config/game";
-import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU } from "@/config/rig";
+import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU, FRAME_SCALE } from "@/config/rig";
 import { TUNING as T } from "@/config/tuning";
 import { audio } from "./audio";
 import { circle, drawBossPlaceholder, drawNameTag, roundRect } from "./bossArt";
@@ -1961,7 +1961,7 @@ export class Engine {
     const img = this.frameFor();
     const pose = this.renderPose();
     if (img) {
-      const h = T.playerHeight * ground.s;
+      const h = T.playerHeight * ground.s * FRAME_SCALE;
       const w = (h * img.width) / img.height;
       ctx.translate(feet.x, feet.y);
       ctx.rotate(pose.rot);
