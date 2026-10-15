@@ -6,6 +6,7 @@
 
 import muraliChase from "@/assets/murali-chase.png.asset.json";
 import muraliAngry from "@/assets/murali-angry.png.asset.json";
+import muraliBack from "@/assets/murali-back.png";
 
 export interface BossConfig {
   id: "murali" | "sumeet";
