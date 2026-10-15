@@ -70,7 +70,7 @@ export const BOSSES: BossConfig[] = [
   {
     id: "murali",
     name: "MURALI",
-    images: { front: muraliChase.url, chase: muraliChase.url, angry: muraliAngry.url },
+    images: { front: muraliChase.url, chase: muraliBack, angry: muraliAngry.url },
     scale: 1.0,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
