@@ -23,6 +23,7 @@ import {
   STAGE1_LENGTH,
   STAGE2_LENGTH,
 } from "@/config/game";
+import turnSheetAsset from "@/assets/fathu-turn-sheet.png.asset.json";
 import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU, FRAME_SCALE } from "@/config/rig";
 import { TUNING as T } from "@/config/tuning";
 import { audio } from "./audio";
@@ -56,6 +57,10 @@ import { POSES } from "@/config/anim";
 import { ROAD_SEGMENTS, type RoadSegment, SEGMENT_LABELS, drawNameplate, drawTreeCanopy } from "./scenery";
 import { loadFathu, loadSprite, type Sprite } from "./sprites";
 import { drawCorridorWorld, drawDeadEndWorld, drawRoadWorld } from "./world";
+
+const TURN_FRAMES = 32;
+const TURN_LEN = 1.3;
+const INTRO_LEN = TURN_LEN + 0.5;
 
 export type Phase =
   | "home"
@@ -393,6 +398,7 @@ export class Engine {
   leapResult: "good" | "bad" | null = null;
   cineT = 0;
   introT = 0;
+  private turnSheet: Sprite = loadSprite(turnSheetAsset.url);
   countT = 0;
   dyingT = 0;
   segment: RoadSegment = "avenue";
@@ -829,7 +835,7 @@ export class Engine {
         return;
       case "intro":
         this.introT += dt;
-        if (this.introT > 1.05) {
+        if (this.introT > INTRO_LEN) {
           this.resetRun();
           this.phase = "countdown";
           this.countT = 0;
@@ -2556,7 +2562,7 @@ export class Engine {
 
   private renderHome(ctx: CanvasRenderingContext2D) {
     const intro = this.phase === "intro" ? this.introT : 0;
-    const push = 1 + smooth(intro / 1.05) * 0.28;
+    const push = 1 + smooth(intro / INTRO_LEN) * 0.28;
     ctx.save();
     ctx.translate(CX, VH * 0.55);
     ctx.scale(push, push);
@@ -2632,7 +2638,22 @@ export class Engine {
         pose = { ...basePose(), turn: Math.max(0.04, Math.min(1, (tt - 0.5) * 2)) };
       }
     }
-    if (rig) {
+    const ts = this.turnSheet;
+    if (ts.ready && ts.img) {
+      // real video frames: front -> side -> back turn
+      const n = TURN_FRAMES;
+      const fw = ts.img.width / n;
+      const u = intro > 0 ? smooth(Math.min(1, intro / TURN_LEN)) : 0;
+      const fi = Math.min(n - 1, Math.floor(u * n));
+      const dh = H * 1.02;
+      const dw = (dh * fw) / ts.img.height;
+      const sway = intro > 0 ? 0 : Math.sin(this.t * 0.75) * 2;
+      ctx.save();
+      ctx.shadowColor = "rgba(255,196,130,0.75)";
+      ctx.shadowBlur = 22;
+      ctx.drawImage(ts.img, fi * fw, 0, fw, ts.img.height, CX - dw / 2 + sway, feetY - dh, dw, dh);
+      ctx.restore();
+    } else if (rig) {
       ctx.save();
       ctx.shadowColor = "rgba(255,196,130,0.75)";
       ctx.shadowBlur = 22;
@@ -2650,8 +2671,8 @@ export class Engine {
     }
     ctx.globalAlpha = 1;
     if (this.vignette) ctx.drawImage(this.vignette, 0, 0);
-    if (intro > 0.7) {
-      ctx.fillStyle = `rgba(10,6,4,${Math.min(1, (intro - 0.7) / 0.35)})`;
+    if (intro > TURN_LEN + 0.15) {
+      ctx.fillStyle = `rgba(10,6,4,${Math.min(1, (intro - TURN_LEN - 0.15) / 0.35)})`;
       ctx.fillRect(0, 0, VW, VH);
     }
   }
