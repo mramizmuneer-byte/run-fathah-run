@@ -6,6 +6,7 @@
 
 import muraliChase from "@/assets/murali-chase.png.asset.json";
 import muraliAngry from "@/assets/murali-angry.png.asset.json";
+import muraliBack from "@/assets/murali-back.png";
 
 export interface BossConfig {
   id: "murali" | "sumeet";
@@ -69,7 +70,7 @@ export const BOSSES: BossConfig[] = [
   {
     id: "murali",
     name: "MURALI",
-    images: { front: muraliChase.url, chase: muraliChase.url, angry: muraliAngry.url },
+    images: { front: muraliChase.url, chase: muraliBack, angry: muraliAngry.url },
     scale: 1.0,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
