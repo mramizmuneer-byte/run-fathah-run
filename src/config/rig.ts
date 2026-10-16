@@ -72,6 +72,7 @@ export const RIG_BLEND_TAU = 0.026;
  */
 const runMods = import.meta.glob("../assets/fathu_run_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
 const jumpMods = import.meta.glob("../assets/fathu_jump_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
+const slideMods = import.meta.glob("../assets/fathu_slide_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
 const urls = (m: Record<string, { url: string }>) => Object.keys(m).sort().map((k) => m[k].url);
 
 /** Frames are drawn this much taller than playerHeight (frames include headroom for raised arms). */
@@ -80,7 +81,7 @@ export const FRAME_SCALE = 1.15;
 export const OPTIONAL_FRAMES = {
   run: urls(runMods),
   jump: urls(jumpMods),
-  slide: Array.from({ length: 5 }, (_, i) => `/sprites/fathu_slide_0${i + 1}.png`),
+  slide: urls(slideMods),
   roll: Array.from({ length: 5 }, (_, i) => `/sprites/fathu_roll_0${i + 1}.png`),
 };
 
