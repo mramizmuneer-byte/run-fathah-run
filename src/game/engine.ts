@@ -165,6 +165,8 @@ const BEST_KEY = "fathu-escape-best";
 const HINTS_KEY = "fathu-escape-hints";
 /** Boss scale per chase step: far, near, about to catch. */
 const BOSS_STEPS = [0.85, 1.0, 1.18];
+/** On-screen height (px at scale 1) of real boss photos — matches Fathu (~290px). */
+const BOSS_PHOTO_HEIGHT = 300;
 
 function rnd(n: number) {
   return Math.floor(Math.random() * n);
@@ -2092,14 +2094,17 @@ export class Engine {
         y -= 30 * L.scale;
       }
       const sprite = this.bossSprites[i];
+      let tagY = L.headY - 12 * L.scale;
       if (sprite && sprite.ready && sprite.img) {
-        const h = 200 * L.scale;
+        // real photos: sized to match Fathu's on-screen height (~290px)
+        const h = BOSS_PHOTO_HEIGHT * L.scale;
         const w = (h * sprite.img.width) / sprite.img.height;
         ctx.drawImage(sprite.img, L.x - w / 2, y - h, w, h);
+        tagY = y - h - 10 * L.scale;
       } else {
         drawBossPlaceholder(ctx, cfg, L.x, y, L.scale / cfg.scale, this.t * 1.2 + i * 0.6, true);
       }
-      drawNameTag(ctx, cfg.name, L.x, L.headY - 12 * L.scale, Math.max(0.7, L.scale * 0.8));
+      drawNameTag(ctx, cfg.name, L.x, tagY, Math.max(0.7, L.scale * 0.8));
     }
   }
 
