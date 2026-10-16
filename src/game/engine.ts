@@ -165,6 +165,8 @@ const BEST_KEY = "fathu-escape-best";
 const HINTS_KEY = "fathu-escape-hints";
 /** Boss scale per chase step: far, near, about to catch. */
 const BOSS_STEPS = [0.85, 1.0, 1.18];
+/** On-screen height (px at scale 1) of real boss photos — matches Fathu (~290px). */
+const BOSS_PHOTO_HEIGHT = 300;
 
 function rnd(n: number) {
   return Math.floor(Math.random() * n);
