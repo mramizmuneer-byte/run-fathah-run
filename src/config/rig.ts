@@ -68,7 +68,7 @@ export const RIG_BLEND_TAU = 0.026;
 
 /**
  * Optional frame-by-frame sprites (back view, transparent, feet at the bottom).
- * If these files exist in /public/sprites they replace the rig for those states.
+ * Loaded from the CDN asset pointers below; they replace the rig for those states.
  */
 const runMods = import.meta.glob("../assets/fathu_run_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
 const jumpMods = import.meta.glob("../assets/fathu_jump_0*.png.asset.json", { eager: true, import: "default" }) as Record<string, { url: string }>;
@@ -82,7 +82,6 @@ export const OPTIONAL_FRAMES = {
   run: urls(runMods),
   jump: urls(jumpMods),
   slide: urls(slideMods),
-  roll: Array.from({ length: 5 }, (_, i) => `/sprites/fathu_roll_0${i + 1}.png`),
 };
 
 /**
