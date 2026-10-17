@@ -165,6 +165,18 @@ const BEST_KEY = "fathu-escape-best";
 const HINTS_KEY = "fathu-escape-hints";
 /** Boss scale per chase step: far, near, about to catch. */
 const BOSS_STEPS = [0.85, 1.0, 1.18];
+/** Who chases at a distance: 0 = Murali only, 1 = Sumeet only, 2 = both. Cycles every 3000 m. */
+export function crewAt(distance: number): 0 | 1 | 2 {
+  return (Math.floor(Math.max(0, distance) / 1000) % 3) as 0 | 1 | 2;
+}
+function crewHas(crew: number, boss: number) {
+  return crew === 2 || crew === boss;
+}
+const CREW_LINES: Record<0 | 1 | 2, { boss: number; text: string; toast: string }> = {
+  0: { boss: 0, text: "Rest, Sumeet. My turn!", toast: "Sumeet takes a break. Murali is back!" },
+  1: { boss: 1, text: "Move aside!", toast: "Sumeet takes over. Murali goes to rest!" },
+  2: { boss: 0, text: "Wait for me!", toast: "Murali is back. Both bosses are chasing!" },
+};
 /** On-screen height (px at scale 1) of real boss photos — matches Fathu (~290px). */
 const BOSS_PHOTO_HEIGHT = 300;
 
@@ -391,6 +403,9 @@ export class Engine {
   bubble: Bubble | null = null;
   bubbleTimer = 2.2;
   bubbleTurn = 0;
+  /** 0..1 on-screen presence per boss (slides in/out on crew changes). */
+  bossPres = [1, 0];
+  crew = 0;
   phoneCall = 0;
   phoneText = "";
 
@@ -581,6 +596,8 @@ export class Engine {
   private resetRun() {
     this.t = 0;
     this.distance = this.prevDistance = 0;
+    this.bossPres = [1, 0];
+    this.crew = 0;
     this.stageDist = 0;
     this.runTime = 0;
     this.scroll = this.prevScroll = 0;
@@ -872,7 +889,7 @@ export class Engine {
         if (this.dyingT > 1.1) {
           this.phase = "over";
           this.timeScale = 1;
-          this.bubble = { text: CATCHPHRASE_SHOUT, boss: 0, golden: false, big: true, life: 999, max: 999 };
+          this.bubble = { text: CATCHPHRASE_SHOUT, boss: this.speaker(), golden: false, big: true, life: 999, max: 999 };
           this.emit(true);
         }
         return;
@@ -949,6 +966,7 @@ export class Engine {
     this.spawnLogic(move);
     this.moveWorld(move);
     this.collide();
+    this.updateCrew(dt);
     this.updateBubbles(dt);
 
     if (this.distance >= this.nextMilestone) {
@@ -1467,7 +1485,7 @@ export class Engine {
     }
     audio.play("hit");
     audio.play("boing");
-    this.bubble = { text: CATCHPHRASE_SHOUT, boss: this.bubbleTurn % 2, golden: false, big: true, life: 1.5, max: 1.5 };
+    this.bubble = { text: CATCHPHRASE_SHOUT, boss: this.speaker(), golden: false, big: true, life: 1.5, max: 1.5 };
     this.bubbleTimer = 2.6;
     const p = project(this.laneX, 1.1, 0);
     this.sparks(p.x, p.y, "#ffffff", 14);
@@ -1503,17 +1521,41 @@ export class Engine {
     if (this.bubbleTimer <= 0 && !this.bubble) {
       this.bubbleTimer = 2.4 + Math.random() * 2.2;
       this.bubbleTurn++;
-      const bossIdx = this.bubbleTurn % 2;
+      const bossIdx = this.speaker();
       let text: string;
       const golden = Math.random() < GOLDEN_BUBBLE_RATE;
       if (this.paaShield > 0) text = CATCHPHRASE_MEEK;
-      else if (Math.random() < 0.08) text = this.bubbleTurn % 4 === 0 ? DUET.a : DUET.b;
+      else if (crewHas(this.crew, 0) && crewHas(this.crew, 1) && Math.random() < 0.08) text = bossIdx === 0 ? DUET.a : DUET.b;
       else if (Math.random() < CATCHPHRASE_RATE || golden) text = pick(CATCHPHRASE_COMBOS);
       else text = pick(SHARED_LINES);
       this.bubble = { text, boss: bossIdx, golden, big: false, life: 2.4, max: 2.4 };
       audio.play("pop");
       if (golden) this.confetti();
     }
+  }
+
+  /** Crew rotates every 1000 m: Murali → Sumeet → both, repeating every 3000 m. */
+  private updateCrew(dt: number) {
+    const c = crewAt(this.distance);
+    if (c !== this.crew) {
+      this.crew = c;
+      const line = CREW_LINES[c];
+      this.bubble = { text: line.text, boss: line.boss, golden: false, big: true, life: 2.6, max: 2.6 };
+      this.bubbleTimer = 3.2;
+      this.pushToast(line.toast, false);
+      audio.play("pop");
+    }
+    for (let i = 0; i < 2; i++) {
+      const target = crewHas(this.crew, i) ? 1 : 0;
+      this.bossPres[i] += (target - this.bossPres[i]) * Math.min(1, dt * 2.5);
+    }
+  }
+
+  /** A boss currently on screen to speak (alternates when both chase). */
+  private speaker(): number {
+    if (this.crew === 0) return 0;
+    if (this.crew === 1) return 1;
+    return this.bubbleTurn % 2;
   }
 
   private pushToast(text: string, gold: boolean) {
@@ -2072,7 +2114,7 @@ export class Engine {
     const feet = project(this.rx, 0, 0);
     const x = feet.x * 0.4 + CX * 0.6 + side * 92;
     const bob = Math.abs(Math.sin(this.t * 9 + i * 1.3)) * 6;
-    const y = VH - 70 - bob + (1 - intro) * 80;
+    const y = VH - 70 - bob + (1 - intro) * 80 + (1 - this.bossPres[i]) * 320;
     return { x, y, scale, headY: y - 100 * scale };
   }
 
@@ -2085,6 +2127,7 @@ export class Engine {
     }
     if (this.phase === "countdown" && this.startStage !== 1) return;
     for (let i = 0; i < BOSSES.length; i++) {
+      if (this.bossPres[i] < 0.02) continue;
       const cfg = BOSSES[i];
       const L = this.bossLayout(i);
       const onVehicle = this.distance >= BOSS_VEHICLE_AT && this.phase === "run3";
@@ -2111,6 +2154,7 @@ export class Engine {
   private drawBossesAbove(ctx: CanvasRenderingContext2D) {
     const k = Math.min(1, this.stageDist / 200);
     for (let i = 0; i < BOSSES.length; i++) {
+      if (this.bossPres[i] < 0.5) continue;
       const scale = 0.55 * (1 - k * 0.8);
       if (scale < 0.08) continue;
       const x = CX + (i === 0 ? -50 : 50);
@@ -2124,6 +2168,7 @@ export class Engine {
     const xs = [112, 282];
     const baseY = VH + 30;
     for (let i = 0; i < 2; i++) {
+      if (!crewHas(this.crew, i)) continue;
       const cfg = BOSSES[i];
       const bob = Math.sin(this.t * 3 + i) * 4;
       const sprite = cfg.images.angry ? loadSprite(cfg.images.angry) : null;
@@ -2134,9 +2179,11 @@ export class Engine {
       } else drawBossPlaceholder(ctx, cfg, xs[i], baseY + bob, scale, this.t * 0.4 + i, false);
       drawNameTag(ctx, cfg.name, xs[i], baseY + bob - 190 * scale * cfg.scale - 4, 1);
     }
-    const hx = xs[0];
-    const hy = baseY - 165 * scale * BOSSES[0].scale;
-    this.bubbleAt(ctx, CATCHPHRASE_SHOUT, hx + 40, hy - 30, hx + 18, hy + 4, true, false, 1, BOSSES[0].name, "right");
+    const who = this.crew === 1 ? 1 : 0;
+    const hx = xs[who];
+    const hy = baseY - 165 * scale * BOSSES[who].scale;
+    if (who === 0) this.bubbleAt(ctx, CATCHPHRASE_SHOUT, hx + 40, hy - 30, hx + 18, hy + 4, true, false, 1, BOSSES[0].name, "right");
+    else this.bubbleAt(ctx, CATCHPHRASE_SHOUT, hx - 40, hy - 30, hx - 18, hy + 4, true, false, 1, BOSSES[1].name, "left");
   }
 
   private drawVehicle(ctx: CanvasRenderingContext2D, i: number, x: number, y: number, scale: number) {
@@ -2492,7 +2539,7 @@ export class Engine {
       ctx.fillText(this.phoneText, 0, 5);
       ctx.font = "600 9px Inter, system-ui, sans-serif";
       ctx.fillStyle = "#9aa0aa";
-      ctx.fillText(BOSSES[this.bubbleTurn % 2].name, 0, 19);
+      ctx.fillText(BOSSES[this.speaker()].name, 0, 19);
       ctx.restore();
     }
 
