@@ -339,6 +339,7 @@ export class Engine {
   private rigFrontReal = false;
   private frames: { run: Sprite[] | null; jump: Sprite[] | null; slide: Sprite[] | null } = { run: null, jump: null, slide: null };
   private bossSprites: (Sprite | null)[] = [];
+  private bossRun: (Sprite[] | null)[] = [];
   private vignette: HTMLCanvasElement | null = null;
 
   // world
@@ -466,6 +467,7 @@ export class Engine {
 
     this.fathu = loadFathu();
     this.bossSprites = BOSSES.map((b) => (b.images.chase ? loadSprite(b.images.chase) : null));
+    this.bossRun = BOSSES.map((b) => (b.runFrames && b.runFrames.length ? b.runFrames.map((u) => loadSprite(u)) : null));
     this.rigBack = buildRig(BACK_RIG, null, false);
     this.rigFront = buildRig(FRONT_RIG, null, true);
     this.tryOptionalFrames();
@@ -2136,7 +2138,10 @@ export class Engine {
         this.drawVehicle(ctx, i, L.x, y, L.scale);
         y -= 30 * L.scale;
       }
-      const sprite = this.bossSprites[i];
+      const run = this.bossRun[i];
+      const runIdx = run ? Math.floor((this.t * 13 + i * 3) % run.length) : 0;
+      const runSprite = run && run.every((s) => s.ready && s.img) && !onVehicle && this.phase !== "countdown" ? run[runIdx] : null;
+      const sprite = runSprite ?? this.bossSprites[i];
       let tagY = L.headY - 12 * L.scale;
       if (sprite && sprite.ready && sprite.img) {
         // real photos: sized to match Fathu's on-screen height (~290px)
