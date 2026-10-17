@@ -8,6 +8,8 @@ import muraliChase from "@/assets/murali-chase.png.asset.json";
 import muraliAngry from "@/assets/murali-angry.png.asset.json";
 import muraliBackAsset from "@/assets/murali-back.png.asset.json";
 const muraliBack = muraliBackAsset.url;
+const muraliRunMods = import.meta.glob<{ url: string }>("@/assets/murali_run_0*.png.asset.json", { eager: true, import: "default" });
+const muraliRun = Object.keys(muraliRunMods).sort().map((k) => muraliRunMods[k].url);
 
 export interface BossConfig {
   id: "murali" | "sumeet";
@@ -18,6 +20,8 @@ export interface BossConfig {
     chase: string | null;
     angry: string | null;
   };
+  /** Optional back-view running cycle frames (played instead of images.chase). */
+  runFrames?: string[];
   scale: number;
   catchphrase: string;
   lines: string[];
@@ -72,6 +76,7 @@ export const BOSSES: BossConfig[] = [
     id: "murali",
     name: "MURALI",
     images: { front: muraliChase.url, chase: muraliBack, angry: muraliAngry.url },
+    runFrames: muraliRun,
     scale: 1.0,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
