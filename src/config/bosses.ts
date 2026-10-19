@@ -12,6 +12,11 @@ const muraliRunMods = import.meta.glob<{ url: string }>("@/assets/murali_run_0*.
 const muraliJumpMods = import.meta.glob<{ url: string }>("@/assets/murali_jump_0*.png.asset.json", { eager: true, import: "default" });
 const muraliSlideMods = import.meta.glob<{ url: string }>("@/assets/murali_slide_0*.png.asset.json", { eager: true, import: "default" });
 const sortedUrls = (m: Record<string, { url: string }>) => Object.keys(m).sort().map((k) => m[k].url);
+import sumeetFront from "@/assets/sumeet_front.png.asset.json";
+const sumeetRunMods = import.meta.glob<{ url: string }>("@/assets/sumeet_run_0*.png.asset.json", { eager: true, import: "default" });
+const sumeetJumpMods = import.meta.glob<{ url: string }>("@/assets/sumeet_jump_0*.png.asset.json", { eager: true, import: "default" });
+const sumeetSlideMods = import.meta.glob<{ url: string }>("@/assets/sumeet_slide_0*.png.asset.json", { eager: true, import: "default" });
+const sumeetRun = sortedUrls(sumeetRunMods);
 const muraliRun = Object.keys(muraliRunMods).sort().map((k) => muraliRunMods[k].url);
 
 export interface BossConfig {
@@ -99,7 +104,10 @@ export const BOSSES: BossConfig[] = [
   {
     id: "sumeet",
     name: "SUMEET",
-    images: { front: null, chase: null, angry: null },
+    images: { front: sumeetFront.url, chase: sumeetRun[0] ?? null, angry: sumeetFront.url },
+    runFrames: sumeetRun,
+    jumpFrames: sortedUrls(sumeetJumpMods),
+    slideFrames: sortedUrls(sumeetSlideMods),
     scale: 1.12,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
