@@ -9,6 +9,9 @@ import muraliAngry from "@/assets/murali-angry.png.asset.json";
 import muraliBackAsset from "@/assets/murali-back.png.asset.json";
 const muraliBack = muraliBackAsset.url;
 const muraliRunMods = import.meta.glob<{ url: string }>("@/assets/murali_run_0*.png.asset.json", { eager: true, import: "default" });
+const muraliJumpMods = import.meta.glob<{ url: string }>("@/assets/murali_jump_0*.png.asset.json", { eager: true, import: "default" });
+const muraliSlideMods = import.meta.glob<{ url: string }>("@/assets/murali_slide_0*.png.asset.json", { eager: true, import: "default" });
+const sortedUrls = (m: Record<string, { url: string }>) => Object.keys(m).sort().map((k) => m[k].url);
 const muraliRun = Object.keys(muraliRunMods).sort().map((k) => muraliRunMods[k].url);
 
 export interface BossConfig {
@@ -22,6 +25,9 @@ export interface BossConfig {
   };
   /** Optional back-view running cycle frames (played instead of images.chase). */
   runFrames?: string[];
+  /** Optional jump / slide frames (feet at a shared ground line, include headroom). */
+  jumpFrames?: string[];
+  slideFrames?: string[];
   scale: number;
   catchphrase: string;
   lines: string[];
@@ -77,6 +83,8 @@ export const BOSSES: BossConfig[] = [
     name: "MURALI",
     images: { front: muraliChase.url, chase: muraliBack, angry: muraliAngry.url },
     runFrames: muraliRun,
+    jumpFrames: sortedUrls(muraliJumpMods),
+    slideFrames: sortedUrls(muraliSlideMods),
     scale: 1.0,
     catchphrase: CATCHPHRASE,
     lines: SHARED_LINES,
