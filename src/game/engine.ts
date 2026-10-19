@@ -179,6 +179,8 @@ const CREW_LINES: Record<0 | 1 | 2, { boss: number; text: string; toast: string 
 };
 /** On-screen height (px at scale 1) of real boss photos — matches Fathu (~290px). */
 const BOSS_PHOTO_HEIGHT = 300;
+const BOSS_JUMP_LEN = 0.75;
+const BOSS_SLIDE_LEN = 0.85;
 
 function rnd(n: number) {
   return Math.floor(Math.random() * n);
@@ -340,6 +342,9 @@ export class Engine {
   private frames: { run: Sprite[] | null; jump: Sprite[] | null; slide: Sprite[] | null } = { run: null, jump: null, slide: null };
   private bossSprites: (Sprite | null)[] = [];
   private bossRun: (Sprite[] | null)[] = [];
+  private bossJump: (Sprite[] | null)[] = [];
+  private bossSlide: (Sprite[] | null)[] = [];
+  private bossAct: ({ kind: "jump" | "slide"; t: number } | null)[] = [null, null];
   private vignette: HTMLCanvasElement | null = null;
 
   // world
@@ -467,6 +472,9 @@ export class Engine {
 
     this.fathu = loadFathu();
     this.bossSprites = BOSSES.map((b) => (b.images.chase ? loadSprite(b.images.chase) : null));
+    const frames = (u?: string[]) => (u && u.length ? u.map((x) => loadSprite(x)) : null);
+    this.bossJump = BOSSES.map((b) => frames(b.jumpFrames));
+    this.bossSlide = BOSSES.map((b) => frames(b.slideFrames));
     this.bossRun = BOSSES.map((b) => (b.runFrames && b.runFrames.length ? b.runFrames.map((u) => loadSprite(u)) : null));
     this.rigBack = buildRig(BACK_RIG, null, false);
     this.rigFront = buildRig(FRONT_RIG, null, true);
@@ -769,6 +777,11 @@ export class Engine {
   }
 
   private setAnim(a: Anim) {
+    if (a === "AIR" || a === "DUCK_START") {
+      // bosses copy Fathu's move a moment later, as they reach the same obstacle
+      const kind = a === "AIR" ? "jump" : "slide";
+      for (let i = 0; i < this.bossAct.length; i++) this.bossAct[i] = { kind, t: -(0.32 + i * 0.12) };
+    }
     this.anim = a;
     this.animT = 0;
   }
@@ -969,6 +982,12 @@ export class Engine {
     this.moveWorld(move);
     this.collide();
     this.updateCrew(dt);
+    for (let i = 0; i < this.bossAct.length; i++) {
+      const a = this.bossAct[i];
+      if (!a) continue;
+      a.t += dt;
+      if (a.t >= (a.kind === "jump" ? BOSS_JUMP_LEN : BOSS_SLIDE_LEN)) this.bossAct[i] = null;
+    }
     this.updateBubbles(dt);
 
     if (this.distance >= this.nextMilestone) {
@@ -2141,11 +2160,22 @@ export class Engine {
       const run = this.bossRun[i];
       const runIdx = run ? Math.floor((this.t * 13 + i * 3) % run.length) : 0;
       const runSprite = run && run.every((s) => s.ready && s.img) && !onVehicle && this.phase !== "countdown" ? run[runIdx] : null;
-      const sprite = runSprite ?? this.bossSprites[i];
+      let sprite = runSprite ?? this.bossSprites[i];
+      let hMul = 1;
+      const act = this.bossAct[i];
+      const actFrames = act && act.t >= 0 && !onVehicle ? (act.kind === "jump" ? this.bossJump[i] : this.bossSlide[i]) : null;
+      if (act && actFrames && actFrames.every((s) => s.ready && s.img) && run && run[0].img) {
+        const u = act.t / (act.kind === "jump" ? BOSS_JUMP_LEN : BOSS_SLIDE_LEN);
+        const f = actFrames[Math.min(actFrames.length - 1, Math.floor(u * actFrames.length))];
+        sprite = f;
+        // action frames share the run frames' pixel scale but are taller (headroom)
+        hMul = f.img!.height / run[0].img.height;
+        if (act.kind === "jump") y -= Math.sin(Math.PI * u) * 40 * L.scale;
+      }
       let tagY = L.headY - 12 * L.scale;
       if (sprite && sprite.ready && sprite.img) {
         // real photos: sized to match Fathu's on-screen height (~290px)
-        const h = BOSS_PHOTO_HEIGHT * L.scale;
+        const h = BOSS_PHOTO_HEIGHT * L.scale * hMul;
         const w = (h * sprite.img.width) / sprite.img.height;
         ctx.drawImage(sprite.img, L.x - w / 2, y - h, w, h);
         tagY = y - h - 10 * L.scale;
