@@ -20,6 +20,10 @@ import {
   PHONE_CALLS,
   SCORING,
   SHIELD_SECONDS,
+  FORM108_SECONDS,
+  FORM108_SPEED,
+  RAPIDO_SECONDS,
+  NOT_RELEASED_LINE,
   STAGE1_LENGTH,
   STAGE2_LENGTH,
 } from "@/config/game";
@@ -27,6 +31,7 @@ import turnSheetAsset from "@/assets/fathu-turn-sheet.png.asset.json";
 import { BACK_RIG, FRONT_RIG, LAYER_RIG, OPTIONAL_FRAMES, RIG_BLEND_TAU, FRAME_SCALE } from "@/config/rig";
 import { TUNING as T } from "@/config/tuning";
 import { audio } from "./audio";
+import { BOOK_EVERY, ICAI_BOOKS, blrArt } from "./bangalore";
 import { circle, drawBossPlaceholder, drawNameTag, roundRect } from "./bossArt";
 import { groundQuad, poly } from "./draw3d";
 import { OB_LOOK, drawObShadow, drawObstacle3D, type ObBox, type ObCat } from "./obstacles3d";
@@ -83,6 +88,7 @@ export interface PublicState {
   newBest: boolean;
   coins: number;
   letters: number;
+  books: number;
   score: number;
   lives: number;
   chase: number;
@@ -290,19 +296,16 @@ function makeChunk(stage: number, easy: boolean): { items: ChunkItem[]; len: num
         ],
         len: 24,
       }));
-    // the bus (stage 3) — two lanes, one free
+    // BMTC bus + parked auto (stage 3) — two lanes blocked, one free
     if (stage === 3)
-      options.push(() => {
-        const start = rnd(2);
-        const fr = start === 0 ? 2 : 0;
-        return {
-          items: [
-            { t: "ob", a: "bus", lane: start, dz: 10, span: 2 },
-            { t: "coins", lane: fr, dz: 6, n: 7 },
-          ],
-          len: 26,
-        };
-      });
+      options.push(() => ({
+        items: [
+          { t: "ob", a: "bus", lane: L, dz: 10 },
+          { t: "ob", a: "auto", lane: o, dz: 14 },
+          { t: "coins", lane: free, dz: 6, n: 7 },
+        ],
+        len: 26,
+      }));
   }
   return pick(options)();
 }
@@ -398,6 +401,10 @@ export class Engine {
   // power-ups
   dndShield = false;
   paaShield = 0;
+  form108 = 0;
+  rapido = 0;
+  books = 0;
+  nextBookAt = BOOK_EVERY;
   flashlight = 0;
   iFrames = 0;
 
@@ -634,6 +641,10 @@ export class Engine {
     this.flash = 0;
     this.dndShield = false;
     this.paaShield = 0;
+    this.form108 = 0;
+    this.rapido = 0;
+    this.books = 0;
+    this.nextBookAt = BOOK_EVERY;
     this.flashlight = 0;
     this.iFrames = 0;
     this.hits = 0;
@@ -695,6 +706,7 @@ export class Engine {
       newBest: this.newBest,
       coins: this.coins,
       letters: this.letters,
+      books: this.books,
       score: this.score,
       lives: Math.max(0, 3 - this.hits),
       chase: Math.min(1, this.chaseVis / 2),
@@ -830,6 +842,7 @@ export class Engine {
     let v = T.baseSpeed + (T.maxSpeed - T.baseSpeed) * e;
     if (this.phase === "run1") v *= T.stage1SpeedFactor;
     else if (this.phase === "run2") v *= T.stage2SpeedFactor;
+    if (this.form108 > 0) v *= FORM108_SPEED;
     return v * this.flags.speed;
   }
 
@@ -967,6 +980,19 @@ export class Engine {
     if (this.iFrames > 0) this.iFrames -= dt;
     if (this.paaShield > 0) this.paaShield = Math.max(0, this.paaShield - dt);
     if (this.flashlight > 0) this.flashlight = Math.max(0, this.flashlight - dt);
+    if (this.rapido > 0) {
+      this.rapido = Math.max(0, this.rapido - dt);
+      if (this.rapido === 0) this.pushToast("Ride over — back on foot!", false);
+    }
+    if (this.form108 > 0) {
+      this.form108 = Math.max(0, this.form108 - dt);
+      if (this.form108 === 0) {
+        // the bosses catch up: the form isn't the release
+        this.bubble = { text: NOT_RELEASED_LINE, boss: this.speaker(), golden: false, big: true, life: 2.6, max: 2.6 };
+        this.bubbleTimer = 3.2;
+        audio.play("pop");
+      }
+    }
 
     if (this.phase === "run3" && this.hits > 0) {
       this.cleanTimer += dt;
@@ -1262,6 +1288,11 @@ export class Engine {
       const gap = T.chunkGap + (easy ? 14 : Math.max(0, 10 - this.runTime * 0.05));
       this.nextChunkZ = base + chunk.len + gap;
     }
+    // one rare ICAI study module every BOOK_EVERY metres (not during the tree fall)
+    if (this.distance + T.spawnDistance >= this.nextBookAt) {
+      this.nextBookAt += BOOK_EVERY;
+      if (this.phase !== "run2") this.pending.push({ z: T.spawnDistance, col: { kind: "book", lane: rnd(3), h: 1.0 } });
+    }
     // release pending items as they reach the spawn line
     for (let i = this.pending.length - 1; i >= 0; i--) {
       const p = this.pending[i];
@@ -1276,12 +1307,13 @@ export class Engine {
     const r = Math.random();
     if (stage === 2) return r < 0.6 ? "leaf" : "coin";
     if (stage === 3) {
-      if (r < 0.26) return "filter";
-      if (r < 0.44) return "dosa";
-      if (r < 0.58) return "vada";
-      if (r < 0.7) return "stamp";
-      if (r < 0.8) return "letter";
-      if (r < 0.88) return "shield";
+      if (r < 0.24) return "filter";
+      if (r < 0.4) return "dosa";
+      if (r < 0.52) return "vada";
+      if (r < 0.62) return "stamp";
+      if (r < 0.72) return "letter";
+      if (r < 0.8) return "shield";
+      if (r < 0.9) return this.rapido > 0 ? "coin" : "rapido";
       return Math.random() < 0.5 ? "torch" : "watch";
     }
     if (r < 0.34) return "chai";
@@ -1368,6 +1400,7 @@ export class Engine {
     const pz1 = T.playerHalfDepth;
     for (const o of this.obstacles) {
       if (!o.active || o.hit) continue;
+      if (this.rapido > 0 && o.cat === "jump") continue; // the Rapido rides over ground hazards
       const zOver = o.z0 < pz1 && o.z1 > pz0;
       if (zOver) {
         if (this.flashlight > 0 && o.x0 < px1 + 0.3 && o.x1 > px0 - 0.3) {
@@ -1444,18 +1477,39 @@ export class Engine {
         audio.play("coin");
         break;
       case "letter":
+        // Form 108: a burst of freedom — run faster for a few seconds
         this.letters++;
         this.score += SCORING.letter;
+        this.form108 = FORM108_SECONDS;
+        this.speedBurst = 1;
         this.sparks(p.x, p.y, "#ffe6a3", 16);
         this.ring(p.x, p.y, "#ffe6a3");
-        audio.play("shield");
-        this.pushToast("Relieving Letter!", true);
+        audio.play("whoosh");
+        this.pushToast("FORM 108 FILED! Run!", true);
         if (this.letters % EASTER_EGG.lettersNeeded === 0) {
           this.score += EASTER_EGG.bonus;
           this.stampAnim = 2.2;
           audio.play("stamp");
         }
         break;
+      case "rapido":
+        this.rapido = RAPIDO_SECONDS;
+        this.sparks(p.x, p.y, "#f7d31e", 16);
+        this.ring(p.x, p.y, "#f7d31e");
+        audio.play("whoosh");
+        this.pushToast("RAPIDO! Hop on — potholes don't matter", true);
+        break;
+      case "book": {
+        const idx = Math.floor(this.books) % ICAI_BOOKS.length;
+        this.books++;
+        this.score += SCORING.book;
+        this.sparks(p.x, p.y, "#ffd34d", 22);
+        this.ring(p.x, p.y, "#ffd34d");
+        this.popup(`+${SCORING.book}`, p.x, p.y - 14, "#ffe08a", 22);
+        audio.play("stamp");
+        this.pushToast(`ICAI MODULE: ${ICAI_BOOKS[idx]}!`, true);
+        break;
+      }
       case "shield":
         this.paaShield = SHIELD_SECONDS;
         this.sparks(p.x, p.y, "#ffd34d", 16);
@@ -1482,7 +1536,7 @@ export class Engine {
   private takeHit(force: boolean) {
     if (!force) {
       if (this.flags.god) return;
-      if (this.iFrames > 0 || this.paaShield > 0) return;
+      if (this.iFrames > 0 || this.paaShield > 0 || this.form108 > 0) return;
       if (this.dndShield) {
         this.dndShield = false;
         this.iFrames = T.invulnTime;
@@ -1903,7 +1957,45 @@ export class Engine {
     const y = c.h + Math.sin(this.t * 3 + c.seed) * 0.06;
     const p = project(LANE_X[c.lane], y, z);
     if (z > FAR || z < -3) return;
-    const special = c.kind === "letter" || c.kind === "shield" || c.kind === "watch" || c.kind === "torch";
+    if (c.kind === "rapido" || c.kind === "book") {
+      const art = blrArt();
+      const s = c.kind === "rapido" ? art.captain : art.books[Math.floor(c.seed) % art.books.length];
+      if (s.ready && s.img) {
+        ctx.save();
+        ctx.globalAlpha = this.obFade(z);
+        if (c.kind === "rapido") {
+          // captain parked in the lane, waiting for his ride
+          const g = project(LANE_X[c.lane], 0, z);
+          const h = 1.95 * g.s;
+          const w = (h * s.img.width) / s.img.height;
+          ctx.fillStyle = "rgba(0,0,0,0.35)";
+          ctx.beginPath();
+          ctx.ellipse(g.x, g.y, w * 0.45, w * 0.12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.drawImage(s.img, g.x - w / 2, g.y - h + Math.sin(this.t * 38) * 0.5, w, h);
+        } else {
+          // a single glowing study module, slowly turning
+          const h = 0.75 * p.s;
+          const w = (h * s.img.width) / s.img.height;
+          const turn = 0.55 + 0.45 * Math.abs(Math.cos(this.t * 1.6));
+          const r = h * 0.9;
+          const gl = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, r);
+          gl.addColorStop(0, "rgba(255,226,120,0.75)");
+          gl.addColorStop(1, "rgba(255,226,120,0)");
+          ctx.fillStyle = gl;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#ffd34d";
+          ctx.lineWidth = Math.max(1.5, 0.04 * p.s);
+          ctx.strokeRect(p.x - (w * turn) / 2, p.y - h / 2, w * turn, h);
+          ctx.drawImage(s.img, p.x - (w * turn) / 2, p.y - h / 2, w * turn, h);
+        }
+        ctx.restore();
+        return;
+      }
+    }
+    const special = c.kind === "letter" || c.kind === "shield" || c.kind === "watch" || c.kind === "torch" || c.kind === "rapido" || c.kind === "book";
     ctx.save();
     ctx.globalAlpha = this.obFade(z);
     const r = (special ? 0.75 : 0.42) * p.s;
@@ -2031,7 +2123,16 @@ export class Engine {
     }
     const img = this.frameFor();
     const pose = this.renderPose();
-    if (img) {
+    const ride = blrArt().ride;
+    if (this.rapido > 0 && ride.ready && ride.img && this.phase !== "dying") {
+      // on the Rapido: two-up scooter with a little engine rumble
+      const h = 1.95 * ground.s;
+      const w = (h * ride.img.width) / ride.img.height;
+      const rum = Math.sin(this.t * 40) * 0.6;
+      ctx.translate(feet.x, feet.y + rum);
+      ctx.rotate((this.lean ?? 0) * 0.08);
+      ctx.drawImage(ride.img, -w / 2, -h, w, h);
+    } else if (img) {
       const h = T.playerHeight * ground.s * FRAME_SCALE;
       const w = (h * img.width) / img.height;
       ctx.translate(feet.x, feet.y);
