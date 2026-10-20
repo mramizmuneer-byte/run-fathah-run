@@ -102,7 +102,9 @@ export const COLLECTIBLE_NAMES = {
   coin: "FREEDOM",
   chai: "CHAI",
   stamp: "Refund Approved",
-  letter: "Relieving Letter",
+  letter: "Form 108",
+  rapido: "RAPIDO",
+  book: "ICAI STUDY MODULE",
   shield: "PAA",
   filter: "FILTER COFFEE",
   dosa: "DOSA",
@@ -123,7 +125,7 @@ export const UI = {
   distance: "DISTANCE",
   best: "BEST",
   coins: "COINS",
-  letters: "LETTERS",
+  letters: "FORM 108",
   tapHint: "Swipe to move · up to jump · down to slide",
   keyHint: "Arrow keys / WASD",
 };
@@ -133,6 +135,7 @@ export const SCORING = {
   chai: 15,
   stamp: 25,
   letter: 150,
+  book: 500,
   food: 30,
   leaf: 5,
 };
@@ -143,3 +146,7 @@ export const SHIELD_SECONDS = 5;
 export const FLASHLIGHT_SECONDS = 5;
 export const CLEAN_RUN_RECOVER_SECONDS = 15;
 export const BOSS_VEHICLE_AT = 2000;
+export const FORM108_SECONDS = 4;
+export const FORM108_SPEED = 1.35;
+export const RAPIDO_SECONDS = 8;
+export const NOT_RELEASED_LINE = "You are not released yet!";
