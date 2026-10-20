@@ -105,5 +105,5 @@ export const OB_DIMS = {
   gate: { len: 0.6, w: 2.1, y0: 1.0, y1: 1.45 },
   tall: { len: 1.2, w: 1.8, y0: 0, y1: 2.4 },
   vehicle: { len: 3.2, w: 1.9, y0: 0, y1: 2.1 },
-  bus: { len: 9, w: 2.0, y0: 0, y1: 3.0 },
+  bus: { len: 9, w: 2.6, y0: 0, y1: 3.3 },
 } as const;

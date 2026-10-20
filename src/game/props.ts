@@ -35,7 +35,7 @@ export const STAGE3_OBS: ObKind[] = [
 
 export type ColKind =
   | "coin" | "chai" | "stamp" | "letter" | "shield" | "filter" | "dosa"
-  | "vada" | "leaf" | "torch" | "watch";
+  | "vada" | "leaf" | "torch" | "watch" | "rapido" | "book";
 
 /* ------------------------------------------------------------------ */
 
@@ -537,8 +537,16 @@ export function drawCollectible(
       ctx.lineWidth = 2;
       roundRect(ctx, -22, -28, 44, 56, 3);
       ctx.stroke();
+      ctx.fillStyle = "#1f3a7a";
+      ctx.font = "800 8px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("ICAI", 0, -20);
+      ctx.font = "900 11px Inter, system-ui, sans-serif";
+      ctx.fillText("FORM", 0, -9);
+      ctx.fillText("108", 0, 3);
       ctx.fillStyle = "#8a7340";
-      for (let i = 0; i < 5; i++) ctx.fillRect(-15, -18 + i * 9, 30, 2.5);
+      for (let i = 0; i < 2; i++) ctx.fillRect(-15, 11 + i * 6, 22, 2);
       ctx.fillStyle = "#c0392b";
       ctx.beginPath();
       ctx.arc(12, 18, 6, 0, Math.PI * 2);

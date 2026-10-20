@@ -7,6 +7,7 @@ import { OB_DIMS } from "@/config/tuning";
 import { drawBox, frontQuad, groundQuad, poly } from "./draw3d";
 import { project } from "./proj";
 import type { ObKind } from "./props";
+import { blrArt } from "./bangalore";
 
 export type ObCat = "jump" | "slide" | "block";
 
@@ -183,6 +184,33 @@ export function drawObstacle3D(
       drawBox(ctx, x0 + 0.04, x1 - 0.04, 0.65, b.y1, b.z1 - 0.32, b.z1 - 0.18, { front: "#2f3a4c", top: "#4a5870", side: "#1f2836", lw: 1 }, camX, camY);
     }
     return;
+  }
+  if (kind === "auto" || kind === "bus") {
+    const art = blrArt();
+    const s = kind === "auto" ? art.auto : art.bus;
+    if (s.ready && s.img) {
+      // dark body sides for depth, then the real rear photo on the camera face
+      const body = kind === "auto" ? { front: "#1d1f1c", top: "#2a2c28", side: "#2b2a1e" } : { front: "#1f7fb8", top: "#5fb7e3", side: "#1a6c9c" };
+      const drawW = kind === "auto" ? w * 0.9 : w;
+      const drawH = drawW * (s.img.height / s.img.width);
+      const x0 = midX - drawW / 2;
+      drawBox(ctx, x0 + 0.08, x0 + drawW - 0.08, 0.15, drawH * 0.8, b.z0 + 0.1, b.z1, body, camX, camY);
+      const jit = Math.sin(t * 31 + b.z1) * 0.012;
+      const tl = project(x0, drawH + jit, b.z0);
+      const br = project(x0 + drawW, jit, b.z0);
+      ctx.drawImage(s.img, tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+      // exhaust puff
+      const ex = project(midX + drawW * 0.15, 0.25, b.z0 - 0.05);
+      const ph = (t * 1.6 + b.z1) % 1;
+      ctx.save();
+      ctx.globalAlpha *= 0.35 * (1 - ph);
+      ctx.fillStyle = "#c9c6c0";
+      ctx.beginPath();
+      ctx.arc(ex.x - ph * 0.4 * ex.s, ex.y - ph * 0.5 * ex.s, (0.12 + ph * 0.3) * ex.s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
   }
   drawBox(ctx, b.x0, b.x1, b.y0, b.y1, b.z0, b.z1, look, camX, camY);
   if (look.cat === "jump") {
