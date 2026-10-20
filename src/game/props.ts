@@ -35,7 +35,7 @@ export const STAGE3_OBS: ObKind[] = [
 
 export type ColKind =
   | "coin" | "chai" | "stamp" | "letter" | "shield" | "filter" | "dosa"
-  | "vada" | "leaf" | "torch" | "watch";
+  | "vada" | "leaf" | "torch" | "watch" | "rapido" | "book";
 
 /* ------------------------------------------------------------------ */
 
