@@ -213,7 +213,7 @@ const POOLS: Record<number, { jump: ObKind[]; block: ObKind[]; slide: ObKind[] }
 };
 
 type ChunkItem =
-  | { t: "ob"; a: "jump" | "block" | "slide" | "bus"; lane: number; dz: number; span?: number }
+  | { t: "ob"; a: "jump" | "block" | "slide" | "bus" | "auto"; lane: number; dz: number; span?: number }
   | { t: "coins"; lane: number; dz: number; n: number; arc?: boolean; low?: boolean }
   | { t: "special"; lane: number; dz: number };
 
@@ -1267,7 +1267,7 @@ export class Engine {
         if (it.t === "ob") {
           const pool = POOLS[stage];
           let kind: ObKind;
-          if (it.a === "bus") kind = "bus";
+          if (it.a === "bus" || it.a === "auto") kind = it.a;
           else {
             const list = pool[it.a].length ? pool[it.a] : pool.block;
             kind = pick(list);
