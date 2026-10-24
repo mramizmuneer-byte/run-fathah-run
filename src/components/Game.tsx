@@ -7,7 +7,7 @@ import { CREDIT, FAREWELL, TAGLINE, TITLE, UI, WISHES, WISH_ROTATE_MS } from "@/
 import { GAME_OVER_SECOND_LINE } from "@/config/bosses";
 
 const INIT: PublicState = {
-  phase: "home", paused: false, distance: 0, best: 0, newBest: false, coins: 0, letters: 0,
+  phase: "home", paused: false, distance: 0, best: 0, newBest: false, coins: 0, letters: 0, books: 0,
   score: 0, lives: 3, chase: 0, dnd: false, shield: 0, torch: 0, count: 3, segment: "", stage: 1, hints: true,
 };
 
@@ -237,7 +237,7 @@ export default function Game() {
             <div className="flex items-center gap-2 text-xs text-white/75">
               Best {s.best} m {s.newBest && <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black text-black">NEW BEST!</span>}
             </div>
-            <div className="text-xs text-white/75">🪙 {s.coins} coins · 📄 {s.letters} Form 108 · 📘 {(s as { books?: number }).books ?? 0} modules</div>
+            <div className="text-xs text-white/75">🪙 {s.coins} coins · 📄 {s.letters} Form 108 · 📘 {s.books} modules</div>
             <div className="w-full rounded-2xl bg-white/10 p-3">
               <div className="text-lg text-amber-300" style={display}>{FAREWELL.heading}</div>
               <p className="text-[12px] leading-snug text-white/90">{w?.text}</p>
